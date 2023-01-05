@@ -17,6 +17,7 @@ clock = pygame.time.Clock()
 pygame.display.set_caption('Собери яблоки!')
 missed_apples = 0
 collected_apples = 0
+bad_apples_collected = 0
 
 
 # Задний фон
@@ -67,15 +68,20 @@ class BadApple(pygame.sprite.Sprite):
         self.rect.y = pos[1]
 
     def update(self):
+        global bad_apples_collected
         if True:
             self.rect = self.rect.move(0, 1)
-        if self.rect.y > 600:
-            self.kill()
+            if self.rect.y > 600:
+                self.kill()
+            if pygame.sprite.collide_mask(self, bro):
+                bad_apples_collected += 1
+                self.kill()
 
 
 class AnimatedSprite(pygame.sprite.Sprite):
     def __init__(self, sheet, columns, rows, desired_row, x, y):
         super().__init__(sprites)
+        self.elapsed = 0
         self.frames = []
         self.t = False
         self.desired_row = columns * (rows - desired_row + 1) * (-1)
@@ -108,28 +114,49 @@ class AnimatedSprite(pygame.sprite.Sprite):
         self.image = self.frames[self.cur_frame]
 
 
+
 running = True
 background = Background()
-bro = AnimatedSprite(load_image('bro.png'), 4, 4, 3, 400, 490)
+bro = AnimatedSprite(load_image('bro.png'), 4, 4, 4, 400, 490)
 start1 = time.time()
 start2 = time.time()
 apple_interval = 2  # интервал, с которым появляются обычные яблоки
 bad_apple_interval = 5  # интервал, с которым появляются плохие яблоки
+max_x = 720
+min_x = 0
+
+
+def move(hero, movement):
+    x, y = hero.rect.x, hero.rect.y
+    if movement == "left":
+        if x > min_x:
+            hero.rect.x -= 10
+    elif movement == "right":
+        if x < max_x - 1:
+            hero.rect.x += 10
+
+
 while running:
     sprites.update()
+    keys = pygame.key.get_pressed()
     now1 = time.time()
     now2 = time.time()
+    if keys[pygame.K_RIGHT]:
+        move(bro, "right")
+    if keys[pygame.K_LEFT]:
+        move(bro, "left")
     if now1 - start1 > apple_interval:
         Apple([random.randint(20, 760), random.randint(0, 20)])
         start1 = now1
     if now2 - start2 > bad_apple_interval:
         BadApple([random.randint(20, 760), random.randint(0, 20)])
         start2 = now2
+    # завершение игры если 3 гнилых яблока собрали или если 10 яблок пропустили
+    if bad_apples_collected == 3 or missed_apples == 10:
+        running = False
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        if event.type == pygame.MOUSEBUTTONUP:
-            pass
     sprites.draw(screen)
     pygame.display.flip()
     clock.tick(60)
