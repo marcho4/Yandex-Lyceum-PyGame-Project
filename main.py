@@ -15,6 +15,8 @@ screen = pygame.display.set_mode(size)
 sprites = pygame.sprite.Group()
 clock = pygame.time.Clock()
 pygame.display.set_caption('Собери яблоки!')
+missed_apples = 0
+collected_apples = 0
 
 
 # Задний фон
@@ -41,16 +43,24 @@ class Apple(pygame.sprite.Sprite):
         self.rect.y = pos[1]
 
     def update(self):
+        global missed_apples, collected_apples
         if True:
             self.rect = self.rect.move(0, 1)
+            if self.rect.y > 600:
+                self.kill()
+                missed_apples += 1
+            if pygame.sprite.collide_mask(self, bro):
+                collected_apples += 1
+                self.kill()
 
 
+# Плохое яблоко
 class BadApple(pygame.sprite.Sprite):
     image = load_image('bad apple.png')
 
     def __init__(self, pos):
         super().__init__(sprites)
-        self.image= BadApple.image
+        self.image = BadApple.image
         self.rect = self.image.get_rect()
         self.mask = pygame.mask.from_surface(self.image)
         self.rect.x = pos[0]
@@ -59,9 +69,48 @@ class BadApple(pygame.sprite.Sprite):
     def update(self):
         if True:
             self.rect = self.rect.move(0, 1)
+        if self.rect.y > 600:
+            self.kill()
+
+
+class AnimatedSprite(pygame.sprite.Sprite):
+    def __init__(self, sheet, columns, rows, desired_row, x, y):
+        super().__init__(sprites)
+        self.frames = []
+        self.t = False
+        self.desired_row = columns * (rows - desired_row + 1) * (-1)
+        if rows - desired_row != 0:
+            self.last_i = (rows - desired_row) * columns * -1
+        elif rows - desired_row == 0:
+            self.last_i = -1
+            self.t = True
+        self.cut_sheet(sheet, columns, rows)
+        self.cur_frame = 0
+        self.image = self.frames[self.cur_frame]
+        self.rect = self.rect.move(x, y)
+
+    def cut_sheet(self, sheet, columns, rows):
+        self.rect = pygame.Rect(0, 0, sheet.get_width() // columns,
+                                sheet.get_height() // rows)
+        for j in range(rows):
+            for i in range(columns):
+                frame_location = (self.rect.w * i, self.rect.h * j)
+                self.frames.append(sheet.subsurface(pygame.Rect(
+                    frame_location, self.rect.size)))
+
+        if self.t:
+            self.frames = self.frames[self.desired_row:]
+        else:
+            self.frames = self.frames[self.desired_row:self.last_i]
+
+    def update(self):
+        self.cur_frame = (self.cur_frame + 1) % len(self.frames)
+        self.image = self.frames[self.cur_frame]
+
 
 running = True
 background = Background()
+bro = AnimatedSprite(load_image('bro.png'), 4, 4, 3, 400, 490)
 start1 = time.time()
 start2 = time.time()
 apple_interval = 2  # интервал, с которым появляются обычные яблоки
@@ -83,6 +132,6 @@ while running:
             pass
     sprites.draw(screen)
     pygame.display.flip()
-    clock.tick(40)
+    clock.tick(60)
 
 pygame.quit()
