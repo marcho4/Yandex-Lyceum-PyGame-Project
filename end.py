@@ -20,7 +20,7 @@ class Poster(pygame.sprite.Sprite):
         if self.rect.x == self.width - self.rect.width:
             pass
         else:
-            self.rect.x += 1
+            self.rect.x += 8
             self.image = Poster.image
 
 
