@@ -13,6 +13,7 @@ pygame.init()
 size = width, height = 800, 600
 screen = pygame.display.set_mode(size)
 sprites = pygame.sprite.Group()
+apples = pygame.sprite.Group()
 clock = pygame.time.Clock()
 pygame.display.set_caption('Собери яблоки!')
 missed_apples = 0
@@ -36,7 +37,7 @@ class Apple(pygame.sprite.Sprite):
     image = load_image("apple.png")
 
     def __init__(self, pos):
-        super().__init__(sprites)
+        super().__init__(apples)
         self.image = Apple.image
         self.rect = self.image.get_rect()
         self.mask = pygame.mask.from_surface(self.image)
@@ -60,7 +61,7 @@ class BadApple(pygame.sprite.Sprite):
     image = load_image('bad apple.png')
 
     def __init__(self, pos):
-        super().__init__(sprites)
+        super().__init__(apples)
         self.image = BadApple.image
         self.rect = self.image.get_rect()
         self.mask = pygame.mask.from_surface(self.image)
@@ -103,19 +104,16 @@ class AnimatedSprite(pygame.sprite.Sprite):
                 frame_location = (self.rect.w * i, self.rect.h * j)
                 self.frames.append(sheet.subsurface(pygame.Rect(
                     frame_location, self.rect.size)))
-
         if self.t:
             self.frames = self.frames[self.desired_row:]
         else:
             self.frames = self.frames[self.desired_row:self.last_i]
 
     def update(self):
-        self.cur_frame = (self.cur_frame + 1) % len(self.frames)
+        self.cur_frame = (self.cur_frame - 1) % len(self.frames)
         self.image = self.frames[self.cur_frame]
 
 
-
-running = True
 background = Background()
 bro = AnimatedSprite(load_image('bro.png'), 4, 4, 4, 400, 490)
 start1 = time.time()
@@ -136,8 +134,9 @@ def move(hero, movement):
             hero.rect.x += 10
 
 
+running = True
 while running:
-    sprites.update()
+    apples.update()
     keys = pygame.key.get_pressed()
     now1 = time.time()
     now2 = time.time()
@@ -145,19 +144,21 @@ while running:
         move(bro, "right")
     if keys[pygame.K_LEFT]:
         move(bro, "left")
-    if now1 - start1 > apple_interval:
-        Apple([random.randint(20, 760), random.randint(0, 20)])
-        start1 = now1
-    if now2 - start2 > bad_apple_interval:
-        BadApple([random.randint(20, 760), random.randint(0, 20)])
-        start2 = now2
-    # завершение игры если 3 гнилых яблока собрали или если 10 яблок пропустили
-    if bad_apples_collected == 3 or missed_apples == 10:
-        running = False
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        if bad_apples_collected == 3 or missed_apples == 10:
+            running = False  # завершение игры если 3 гнилых яблока собрали или если 10 яблок пропустили
+            print('you missed')
+        if now1 - start1 > apple_interval:
+            Apple([random.randint(20, 760), random.randint(0, 20)])
+            start1 = now1
+        if now2 - start2 > bad_apple_interval:
+            BadApple([random.randint(20, 760), random.randint(0, 20)])
+            start2 = now2
+        sprites.update()
     sprites.draw(screen)
+    apples.draw(screen)
     pygame.display.flip()
     clock.tick(60)
 
