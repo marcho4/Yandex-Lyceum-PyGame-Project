@@ -19,6 +19,7 @@ pygame.display.set_caption('Собери яблоки!')
 missed_apples = 0
 collected_apples = 0
 bad_apples_collected = 0
+s = 0
 
 
 # Задний фон
@@ -30,6 +31,17 @@ class Background(pygame.sprite.Sprite):
         self.width, self.height = size
         self.image = Background.image
         self.rect = self.image.get_rect()
+
+    def update(self):
+        pygame.font.init()
+        font = pygame.font.Font(None, 44)
+        if s == 0:
+            render = font.render(f'Для запуска нажмите одну из стрелок', True, 'red')
+            screen.blit(render, (85, 170))
+        else:
+            render = font.render(f'Ваш счёт: {collected_apples}', True, 'red')
+            screen.blit(render, (10, 50))
+        pygame.display.flip()
 
 
 # Обычное яблоко
@@ -124,6 +136,8 @@ max_x = 720
 min_x = 0
 
 
+
+
 def move(hero, movement):
     x, y = hero.rect.x, hero.rect.y
     if movement == "left":
@@ -136,14 +150,17 @@ def move(hero, movement):
 
 running = True
 while running:
-    apples.update()
     keys = pygame.key.get_pressed()
     now1 = time.time()
     now2 = time.time()
     if keys[pygame.K_RIGHT]:
+        s = 1
         move(bro, "right")
+        sprites.update()
     if keys[pygame.K_LEFT]:
+        s = 1
         move(bro, "left")
+        sprites.update()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -156,10 +173,11 @@ while running:
         if now2 - start2 > bad_apple_interval:
             BadApple([random.randint(20, 760), random.randint(0, 20)])
             start2 = now2
-        sprites.update()
     sprites.draw(screen)
     apples.draw(screen)
+    apples.update()
+    background.update()
     pygame.display.flip()
-    clock.tick(60)
+    clock.tick(100)
 
 pygame.quit()
