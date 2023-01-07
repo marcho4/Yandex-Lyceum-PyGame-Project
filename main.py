@@ -14,11 +14,14 @@ size = width, height = 800, 600
 screen = pygame.display.set_mode(size)
 sprites = pygame.sprite.Group()
 apples = pygame.sprite.Group()
+lives = pygame.sprite.Group()
 clock = pygame.time.Clock()
 pygame.display.set_caption('Собери яблоки!')
 missed_apples = 0
 collected_apples = 0
 bad_apples_collected = 0
+pygame.font.init()
+font = pygame.font.Font(None, 44)
 s = 0
 
 
@@ -33,13 +36,14 @@ class Background(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
 
     def update(self):
-        pygame.font.init()
-        font = pygame.font.Font(None, 44)
         if s == 0:
-            render = font.render(f'Для запуска нажмите одну из стрелок', True, 'red')
+            render = font.render(f'Press <-- or --> to start the game', True, 'red')
             screen.blit(render, (85, 170))
+        elif bad_apples_collected == 3:
+            render = font.render(f'You missed with the score {collected_apples}!', True, 'red')
+            screen.blit(render, (200, 300))
         else:
-            render = font.render(f'Ваш счёт: {collected_apples}', True, 'red')
+            render = font.render(f'Your score: {collected_apples}', True, 'red')
             screen.blit(render, (10, 50))
         pygame.display.flip()
 
@@ -88,7 +92,28 @@ class BadApple(pygame.sprite.Sprite):
                 self.kill()
             if pygame.sprite.collide_mask(self, bro):
                 bad_apples_collected += 1
+                lives.update()
                 self.kill()
+
+
+class Lives(pygame.sprite.Sprite):
+    image = load_image('life.png')
+
+    def __init__(self, pos):
+        super().__init__(lives)
+        self.image = Lives.image
+        self.rect = self.image.get_rect()
+        self.mask = pygame.mask.from_surface(self.image)
+        self.rect.x = pos[0]
+        self.rect.y = pos[1]
+
+    def update(self):
+        if bad_apples_collected == 1:
+            l3.kill()
+        elif bad_apples_collected == 2:
+            l2.kill()
+        else:
+            l1.kill()
 
 
 class AnimatedSprite(pygame.sprite.Sprite):
@@ -97,6 +122,11 @@ class AnimatedSprite(pygame.sprite.Sprite):
         self.elapsed = 0
         self.frames = []
         self.t = False
+        self.d = desired_row
+        if self.d == 2:
+            desired_row = 3
+        elif self.d == 1:
+            desired_row = 4
         self.desired_row = columns * (rows - desired_row + 1) * (-1)
         if rows - desired_row != 0:
             self.last_i = (rows - desired_row) * columns * -1
@@ -111,8 +141,8 @@ class AnimatedSprite(pygame.sprite.Sprite):
     def cut_sheet(self, sheet, columns, rows):
         self.rect = pygame.Rect(0, 0, sheet.get_width() // columns,
                                 sheet.get_height() // rows)
-        for j in range(rows):
-            for i in range(columns):
+        for j in range(columns):
+            for i in range(rows):
                 frame_location = (self.rect.w * i, self.rect.h * j)
                 self.frames.append(sheet.subsurface(pygame.Rect(
                     frame_location, self.rect.size)))
@@ -121,52 +151,52 @@ class AnimatedSprite(pygame.sprite.Sprite):
         else:
             self.frames = self.frames[self.desired_row:self.last_i]
 
+    def move(self, movement):
+        x, y = self.rect.x, self.rect.y
+        if movement == "left":
+            if x > min_x:
+                self.rect.x -= 10
+        elif movement == "right":
+            if x < max_x - 1:
+                self.rect.x += 10
+
     def update(self):
         self.cur_frame = (self.cur_frame - 1) % len(self.frames)
         self.image = self.frames[self.cur_frame]
 
 
 background = Background()
-bro = AnimatedSprite(load_image('bro.png'), 4, 4, 4, 400, 490)
+bro = AnimatedSprite(load_image('bro.png'), 4, 4, 1, 400, 490)
+l1 = Lives((600, 40))
+l2 = Lives((650, 40))
+l3 = Lives((700, 40))
 start1 = time.time()
 start2 = time.time()
 apple_interval = 2  # интервал, с которым появляются обычные яблоки
 bad_apple_interval = 5  # интервал, с которым появляются плохие яблоки
 max_x = 720
 min_x = 0
-
-
-
-
-def move(hero, movement):
-    x, y = hero.rect.x, hero.rect.y
-    if movement == "left":
-        if x > min_x:
-            hero.rect.x -= 10
-    elif movement == "right":
-        if x < max_x - 1:
-            hero.rect.x += 10
-
-
 running = True
 while running:
+    bro.d = 0
     keys = pygame.key.get_pressed()
     now1 = time.time()
     now2 = time.time()
     if keys[pygame.K_RIGHT]:
         s = 1
-        move(bro, "right")
+        bro.d = 1
+        bro.move("right")
         sprites.update()
     if keys[pygame.K_LEFT]:
         s = 1
-        move(bro, "left")
+        bro.d = 2
+        bro.move("left")
         sprites.update()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        if bad_apples_collected == 3 or missed_apples == 10:
-            running = False  # завершение игры если 3 гнилых яблока собрали или если 10 яблок пропустили
-            print('you missed')
+        if bad_apples_collected == 3:
+            running = False
         if now1 - start1 > apple_interval:
             Apple([random.randint(20, 760), random.randint(0, 20)])
             start1 = now1
@@ -175,6 +205,7 @@ while running:
             start2 = now2
     sprites.draw(screen)
     apples.draw(screen)
+    lives.draw(screen)
     apples.update()
     background.update()
     pygame.display.flip()
