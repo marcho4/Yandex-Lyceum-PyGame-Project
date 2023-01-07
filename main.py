@@ -9,9 +9,41 @@ def load_image(name):
     return image
 
 
-pygame.init()
-size = width, height = 800, 600
+class Poster(pygame.sprite.Sprite):
+    def __init__(self, group, size):
+        super().__init__(group)
+        self.width, self.height = size
+        Poster.image = load_image('game_start.png')
+        self.image = Poster.image
+        self.rect = self.image.get_rect()
+        self.rect.x = 140
+        self.rect.y = 219
+        pygame.font.init()
+        f1 = pygame.font.Font(None, 60)
+        r1 = f1.render(f'Press SPACE to play!', True, 'black')
+        screen.blit(r1, (90, 400))
+
+
+size = 600, 600
 screen = pygame.display.set_mode(size)
+screen.fill('white')
+pygame.display.set_caption('Start game')
+post = pygame.sprite.Group()
+poster = Poster(post, size)
+
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                running = False
+                run = True
+    post.draw(screen)
+    pygame.display.flip()
+
+
 sprites = pygame.sprite.Group()
 apples = pygame.sprite.Group()
 lives = pygame.sprite.Group()
@@ -28,6 +60,9 @@ s = 0
 # Задний фон
 class Background(pygame.sprite.Sprite):
     image = load_image('apple garden.png')
+    pygame.init()
+    size = width, height = 800, 600
+    screen = pygame.display.set_mode(size)
 
     def __init__(self):
         super().__init__(sprites)
@@ -176,27 +211,24 @@ apple_interval = 2  # интервал, с которым появляются �
 bad_apple_interval = 5  # интервал, с которым появляются плохие яблоки
 max_x = 720
 min_x = 0
-running = True
-while running:
-    bro.d = 0
+run = True
+while run:
     keys = pygame.key.get_pressed()
     now1 = time.time()
     now2 = time.time()
     if keys[pygame.K_RIGHT]:
         s = 1
-        bro.d = 1
         bro.move("right")
         sprites.update()
     if keys[pygame.K_LEFT]:
         s = 1
-        bro.d = 2
         bro.move("left")
         sprites.update()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            running = False
+            run = False
         if bad_apples_collected == 3:
-            running = False
+            run = False
         if now1 - start1 > apple_interval:
             Apple([random.randint(20, 760), random.randint(0, 20)])
             start1 = now1
