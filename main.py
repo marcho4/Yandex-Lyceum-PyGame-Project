@@ -24,6 +24,27 @@ class Poster(pygame.sprite.Sprite):
         screen.blit(r1, (90, 400))
 
 
+class Ending(pygame.sprite.Sprite):
+    def __init__(self, group, size):
+        super().__init__(group)
+        self.width, self.height = size
+        Ending.image = load_image('gameover.png')
+        self.image = Ending.image
+        self.rect = self.image.get_rect()
+        self.rect.x = -600
+        self.rect.y = 0
+
+    def update(self):
+        if self.rect.x == self.width - self.rect.width:
+            pygame.font.init()
+            f1 = pygame.font.Font(None, 44)
+            r1 = f1.render(f'Press any mouse button to end!', True, 'green')
+            screen.blit(r1, (60, 400))
+        else:
+            self.rect.x += 1
+            self.image = Ending.image
+
+
 size = 600, 600
 screen = pygame.display.set_mode(size)
 screen.fill('white')
@@ -74,9 +95,16 @@ class Background(pygame.sprite.Sprite):
         if s == 0:
             render = font.render(f'Press <-- or --> to start the game', True, 'red')
             screen.blit(render, (85, 170))
-        elif bad_apples_collected == 3:
+        elif (bad_apples_collected == 3 and level == 1) or \
+                (level == 2 and bad_apples_collected + missed_apples == 3):
             render = font.render(f'You missed with the score {collected_apples}!', True, 'red')
             screen.blit(render, (200, 300))
+            if level == 1:
+                r2 = font.render('Press SPACE for the next level', True, 'red')
+                screen.blit(r2, (200, 350))
+            elif level == 2:
+                r2 = font.render('Press SPACE to leave the game', True, 'red')
+                screen.blit(r2, (200, 350))
         else:
             render = font.render(f'Your score: {collected_apples}', True, 'red')
             screen.blit(render, (10, 50))
@@ -99,7 +127,7 @@ class Apple(pygame.sprite.Sprite):
         global missed_apples, collected_apples
         if True:
             self.rect = self.rect.move(0, 1)
-            if self.rect.y > 600:
+            if self.rect.y > 550:
                 self.kill()
                 missed_apples += 1
             if pygame.sprite.collide_mask(self, bro):
@@ -143,12 +171,20 @@ class Lives(pygame.sprite.Sprite):
         self.rect.y = pos[1]
 
     def update(self):
-        if bad_apples_collected == 1:
-            l3.kill()
-        elif bad_apples_collected == 2:
-            l2.kill()
-        else:
-            l1.kill()
+        if level == 1:
+            if bad_apples_collected == 1:
+                l3.kill()
+            elif bad_apples_collected == 2:
+                l2.kill()
+            else:
+                l1.kill()
+        elif level == 2:
+            if bad_apples_collected + missed_apples == 1:
+                l6.kill()
+            elif bad_apples_collected + missed_apples == 2:
+                l5.kill()
+            elif bad_apples_collected + missed_apples == 3:
+                l4.kill()
 
 
 class AnimatedSprite(pygame.sprite.Sprite):
@@ -190,10 +226,10 @@ class AnimatedSprite(pygame.sprite.Sprite):
         x, y = self.rect.x, self.rect.y
         if movement == "left":
             if x > min_x:
-                self.rect.x -= 10
+                self.rect.x -= 4
         elif movement == "right":
             if x < max_x - 1:
-                self.rect.x += 10
+                self.rect.x += 4
 
     def update(self):
         self.cur_frame = (self.cur_frame - 1) % len(self.frames)
@@ -211,6 +247,7 @@ apple_interval = 2  # интервал, с которым появляются �
 bad_apple_interval = 5  # интервал, с которым появляются плохие яблоки
 max_x = 720
 min_x = 0
+level = 1
 run = True
 while run:
     keys = pygame.key.get_pressed()
@@ -228,19 +265,94 @@ while run:
         if event.type == pygame.QUIT:
             run = False
         if bad_apples_collected == 3:
-            run = False
+            if keys[pygame.K_SPACE]:
+                run = False
         if now1 - start1 > apple_interval:
             Apple([random.randint(20, 760), random.randint(0, 20)])
             start1 = now1
         if now2 - start2 > bad_apple_interval:
             BadApple([random.randint(20, 760), random.randint(0, 20)])
             start2 = now2
+    if bad_apples_collected != 3:
+        sprites.draw(screen)
+        apples.draw(screen)
+        lives.draw(screen)
+        apples.update()
+        background.update()
+        pygame.display.flip()
+        clock.tick(120)
+
+
+res = collected_apples
+missed_apples = 0
+collected_apples = 0
+bad_apples_collected = 0
+lives = pygame.sprite.Group()
+l4 = Lives((600, 40))
+l5 = Lives((650, 40))
+l6 = Lives((700, 40))
+apples = pygame.sprite.Group()
+apple_interval = 2
+bad_apple_interval = 3
+level = 2
+s = 0
+run2 = True
+while run2:
+    keys = pygame.key.get_pressed()
+    now1 = time.time()
+    now2 = time.time()
+    if keys[pygame.K_RIGHT]:
+        s = 1
+        bro.move("right")
+        sprites.update()
+    if keys[pygame.K_LEFT]:
+        s = 1
+        bro.move("left")
+        sprites.update()
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            run2 = False
+        if bad_apples_collected + missed_apples == 3:
+            if keys[pygame.K_SPACE]:
+                run2 = False
+                run_end = True
+        if now1 - start1 > apple_interval:
+            Apple([random.randint(20, 760), random.randint(0, 20)])
+            start1 = now1
+        if now2 - start2 > bad_apple_interval:
+            BadApple([random.randint(20, 760), random.randint(0, 20)])
+            start2 = now2
+    if bad_apples_collected + missed_apples != 3:
+        sprites.draw(screen)
+        apples.draw(screen)
+        lives.draw(screen)
+        lives.update()
+        apples.update()
+        background.update()
+        pygame.display.flip()
+        clock.tick(200)
+
+
+size = 600, 600
+screen = pygame.display.set_mode(size)
+pygame.display.set_caption('Game over')
+sprites = pygame.sprite.Group()
+clock = pygame.time.Clock()
+ending = Ending(sprites, size)
+c = 0
+
+run_end = True
+while run_end:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            run_end = False
+        if event.type == pygame.MOUSEBUTTONUP:
+            run_end = False
+    screen.fill('green')
     sprites.draw(screen)
-    apples.draw(screen)
-    lives.draw(screen)
-    apples.update()
-    background.update()
+    sprites.update()
     pygame.display.flip()
-    clock.tick(100)
+    clock.tick(200)
+    c += 1
 
 pygame.quit()
