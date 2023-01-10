@@ -16,12 +16,10 @@ class Poster(pygame.sprite.Sprite):
         Poster.image = load_image('game_start.png')
         self.image = Poster.image
         self.rect = self.image.get_rect()
-        self.rect.x = 140
-        self.rect.y = 219
         pygame.font.init()
-        f1 = pygame.font.Font(None, 60)
-        r1 = f1.render(f'Press SPACE to play!', True, 'black')
-        screen.blit(r1, (90, 400))
+        f1 = pygame.font.Font('data/VT323-Regular.ttf', 40)
+        r1 = f1.render(f'press SPACE to start the game', True, 'white')
+        screen.blit(r1, (75, 260))
 
 
 class Ending(pygame.sprite.Sprite):
@@ -37,17 +35,17 @@ class Ending(pygame.sprite.Sprite):
     def update(self):
         if self.rect.x == self.width - self.rect.width:
             pygame.font.init()
-            f1 = pygame.font.Font(None, 44)
-            r1 = f1.render(f'Press any mouse button to end!', True, 'green')
-            screen.blit(r1, (60, 400))
+            f1 = pygame.font.Font('data/VT323-Regular.ttf', 40)
+            r1 = f1.render(f'press any button to leave', True, 'green')
+            screen.blit(r1, (100, 350))
         else:
-            self.rect.x += 1
+            self.rect.x += 8
             self.image = Ending.image
 
 
 size = 600, 600
 screen = pygame.display.set_mode(size)
-screen.fill('white')
+screen.fill('black')
 pygame.display.set_caption('Start game')
 post = pygame.sprite.Group()
 poster = Poster(post, size)
@@ -64,7 +62,6 @@ while running:
     post.draw(screen)
     pygame.display.flip()
 
-
 sprites = pygame.sprite.Group()
 apples = pygame.sprite.Group()
 lives = pygame.sprite.Group()
@@ -74,7 +71,7 @@ missed_apples = 0
 collected_apples = 0
 bad_apples_collected = 0
 pygame.font.init()
-font = pygame.font.Font(None, 44)
+font = pygame.font.Font('data/VT323-Regular.ttf', 40)
 s = 0
 
 
@@ -93,21 +90,21 @@ class Background(pygame.sprite.Sprite):
 
     def update(self):
         if s == 0:
-            render = font.render(f'Press <-- or --> to start the game', True, 'red')
-            screen.blit(render, (85, 170))
+            render = font.render(f'Press <-- or --> to start the game', True, 'black')
+            screen.blit(render, (10, 40))
         elif (bad_apples_collected == 3 and level == 1) or \
                 (level == 2 and bad_apples_collected + missed_apples == 3):
-            render = font.render(f'You missed with the score {collected_apples}!', True, 'red')
-            screen.blit(render, (200, 300))
+            render = font.render(f'You missed with the score {collected_apples}!', True, 'black')
+            screen.blit(render, (180, 250))
             if level == 1:
-                r2 = font.render('Press SPACE for the next level', True, 'red')
-                screen.blit(r2, (200, 350))
+                r2 = font.render('Press SPACE for the next level', True, 'black')
+                screen.blit(r2, (165, 290))
             elif level == 2:
-                r2 = font.render('Press SPACE to leave the game', True, 'red')
-                screen.blit(r2, (200, 350))
+                r2 = font.render('Press SPACE to leave the game', True, 'black')
+                screen.blit(r2, (165, 290))
         else:
-            render = font.render(f'Your score: {collected_apples}', True, 'red')
-            screen.blit(render, (10, 50))
+            render = font.render(f'Your score: {collected_apples}', True, 'black')
+            screen.blit(render, (10, 40))
         pygame.display.flip()
 
 
@@ -282,7 +279,6 @@ while run:
         pygame.display.flip()
         clock.tick(120)
 
-
 res = collected_apples
 missed_apples = 0
 collected_apples = 0
@@ -332,7 +328,6 @@ while run2:
         pygame.display.flip()
         clock.tick(200)
 
-
 size = 600, 600
 screen = pygame.display.set_mode(size)
 pygame.display.set_caption('Game over')
@@ -346,7 +341,7 @@ while run_end:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run_end = False
-        if event.type == pygame.MOUSEBUTTONUP:
+        if event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
             run_end = False
     screen.fill('green')
     sprites.draw(screen)
