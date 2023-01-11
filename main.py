@@ -4,6 +4,29 @@ import time
 import pygame
 
 
+def cut_sheet(sheet, columns, rows, need):
+    rect = pygame.Rect(0, 0, sheet.get_width() // columns,
+                       sheet.get_height() // rows)
+    t = False
+    frames = []
+    last_i = 0
+    if rows - need == 0:
+        t = True
+        last_i = -1
+    if rows - need != 0:
+        last_i = (rows - need) * columns
+        need = columns * (rows - need + 1) * (-1)
+    for j in range(columns):
+        for i in range(rows):
+            frame_location = (rect.w * i, rect.h * j)
+            frames.append(sheet.subsurface(pygame.Rect(
+                frame_location, rect.size)))
+    if t:
+        return frames[-need:]
+    else:
+        return frames[need:-last_i]
+
+
 def load_image(name):
     image = pygame.image.load(f"{'data'}/{name}")
     return image
@@ -252,10 +275,12 @@ while run:
     now2 = time.time()
     if keys[pygame.K_RIGHT]:
         s = 1
+        bro.frames = cut_sheet(load_image('bro.png'), 4, 4, 4)
         bro.move("right")
         sprites.update()
     if keys[pygame.K_LEFT]:
         s = 1
+        bro.frames = cut_sheet(load_image('bro.png'), 4, 4, 3)
         bro.move("left")
         sprites.update()
     for event in pygame.event.get():
@@ -299,10 +324,12 @@ while run2:
     now2 = time.time()
     if keys[pygame.K_RIGHT]:
         s = 1
+        bro.frames = cut_sheet(load_image('bro.png'), 4, 4, 4)
         bro.move("right")
         sprites.update()
     if keys[pygame.K_LEFT]:
         s = 1
+        bro.frames = cut_sheet(load_image('bro.png'), 4, 4, 3)
         bro.move("left")
         sprites.update()
     for event in pygame.event.get():
