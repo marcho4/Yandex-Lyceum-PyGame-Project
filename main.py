@@ -1,9 +1,61 @@
 import random
 import time
+import sys
 
 import pygame
+import sqlite3
+from PyQt5 import QtGui
+from PyQt5.QtWidgets import QWidget, QApplication, QPushButton, QLineEdit, QLabel
 
 
+#  Name Input Window
+class Window(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+
+    def initUI(self):
+        self.setGeometry(500, 200, 300, 300)
+        self.setWindowTitle('Name')
+        self.setStyleSheet('background: rgb(0, 0, 0)')
+        #  connecting to database
+        global con
+        con = sqlite3.connect('data/game1.db')
+        global cur
+        cur = con.cursor()
+        self.btn = QPushButton('Save', self)
+        self.btn.setGeometry(20, 200, 150, 50)
+        font = QtGui.QFont()
+        font.setFamily('Times')
+        font.setPointSize(20)
+        self.btn.setFont(font)
+        self.btn.setStyleSheet('background: rgb(0,255,0);')
+
+        self.name_window = QLineEdit(self)
+        self.name_window.setGeometry(20, 50, 200, 50)
+        self.name_window.setFont(font)
+        self.name_window.show()
+
+        self.name = QLabel('Enter your name to save the result', self)
+        self.name.setGeometry(20, 10, 200, 50)
+        font.setPointSize(14)
+        self.name.setFont(font)
+
+        self.btn.clicked.connect(self.results)
+
+    def results(self):
+        #  saving results to database
+        sqlite_insert_query = f"""INSERT INTO result
+                                  (name, first_result, second_result)
+                                  VALUES
+                                  ('{self.name_window.text()}', '{first_result}', '{second_result}');"""
+        cur.execute(sqlite_insert_query)
+        con.commit()
+        ex.hide()
+        sys.exit()
+
+
+#  Animation
 def cut_sheet(sheet, columns, rows, need):
     rect = pygame.Rect(0, 0, sheet.get_width() // columns,
                        sheet.get_height() // rows)
@@ -27,11 +79,13 @@ def cut_sheet(sheet, columns, rows, need):
         return frames[need:-last_i]
 
 
+#  Downloading images
 def load_image(name):
     image = pygame.image.load(f"{'data'}/{name}")
     return image
 
 
+#  Start window
 class Poster(pygame.sprite.Sprite):
     def __init__(self, group, size):
         super().__init__(group)
@@ -45,6 +99,7 @@ class Poster(pygame.sprite.Sprite):
         screen.blit(r1, (75, 260))
 
 
+#  Final window
 class Ending(pygame.sprite.Sprite):
     def __init__(self, group, size):
         super().__init__(group)
@@ -66,6 +121,7 @@ class Ending(pygame.sprite.Sprite):
             self.image = Ending.image
 
 
+#  showing start window
 size = 600, 600
 screen = pygame.display.set_mode(size)
 screen.fill('black')
@@ -93,12 +149,14 @@ pygame.display.set_caption('Собери яблоки!')
 missed_apples = 0
 collected_apples = 0
 bad_apples_collected = 0
+global first_result
+global second_result
 pygame.font.init()
 font = pygame.font.Font('data/VT323-Regular.ttf', 40)
 s = 0
 
 
-# Задний фон
+#  Background
 class Background(pygame.sprite.Sprite):
     image = load_image('apple garden.png')
     pygame.init()
@@ -131,7 +189,7 @@ class Background(pygame.sprite.Sprite):
         pygame.display.flip()
 
 
-# Обычное яблоко
+#  Regular apple
 class Apple(pygame.sprite.Sprite):
     image = load_image("apple.png")
 
@@ -155,7 +213,7 @@ class Apple(pygame.sprite.Sprite):
                 self.kill()
 
 
-# Плохое яблоко
+#  Bad apple
 class BadApple(pygame.sprite.Sprite):
     image = load_image('bad apple.png')
 
@@ -179,6 +237,7 @@ class BadApple(pygame.sprite.Sprite):
                 self.kill()
 
 
+#  Lives
 class Lives(pygame.sprite.Sprite):
     image = load_image('life.png')
 
@@ -207,6 +266,7 @@ class Lives(pygame.sprite.Sprite):
                 l4.kill()
 
 
+#  Animation Pt.2
 class AnimatedSprite(pygame.sprite.Sprite):
     def __init__(self, sheet, columns, rows, desired_row, x, y):
         super().__init__(sprites)
@@ -263,11 +323,15 @@ l2 = Lives((650, 40))
 l3 = Lives((700, 40))
 start1 = time.time()
 start2 = time.time()
-apple_interval = 2  # интервал, с которым появляются обычные яблоки
-bad_apple_interval = 5  # интервал, с которым появляются плохие яблоки
+#  interval for regular apples
+apple_interval = 2
+#  interval for bad apples
+bad_apple_interval = 5
 max_x = 720
 min_x = 0
 level = 1
+
+#  showing first level
 run = True
 while run:
     keys = pygame.key.get_pressed()
@@ -304,7 +368,8 @@ while run:
         pygame.display.flip()
         clock.tick(120)
 
-res = collected_apples
+#  saving first level result for database
+first_result = collected_apples
 missed_apples = 0
 collected_apples = 0
 bad_apples_collected = 0
@@ -317,6 +382,8 @@ apple_interval = 2
 bad_apple_interval = 3
 level = 2
 s = 0
+
+#  showing second level
 run2 = True
 while run2:
     keys = pygame.key.get_pressed()
@@ -355,6 +422,8 @@ while run2:
         pygame.display.flip()
         clock.tick(200)
 
+#  saving second result for database
+second_result = collected_apples
 size = 600, 600
 screen = pygame.display.set_mode(size)
 pygame.display.set_caption('Game over')
@@ -363,12 +432,13 @@ clock = pygame.time.Clock()
 ending = Ending(sprites, size)
 c = 0
 
+#  showing end window
 run_end = True
 while run_end:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run_end = False
-        if event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+        if (event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN) and c >= 650:
             run_end = False
     screen.fill('green')
     sprites.draw(screen)
@@ -377,4 +447,10 @@ while run_end:
     clock.tick(200)
     c += 1
 
-pygame.quit()
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    ex = Window()
+    ex.show()
+    pygame.quit()
+    sys.exit(app.exec())
