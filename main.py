@@ -7,6 +7,13 @@ import sqlite3
 from PyQt5 import QtGui
 from PyQt5.QtWidgets import QWidget, QApplication, QPushButton, QLineEdit, QLabel
 
+# Sounds
+pygame.init()
+pop_sound = pygame.mixer.Sound('data/mixkit-message-pop-alert-2354.mp3')
+ouch = pygame.mixer.Sound('data/ouch!.wav')
+pygame.mixer.music.load('data/Cozy-Place-Chill-Background-Music.mp3')
+pygame.mixer.music.play()
+
 
 #  Name Input Window
 class Window(QWidget):
@@ -55,7 +62,7 @@ class Window(QWidget):
         sys.exit()
 
 
-#  Animation
+#  Cutting frame function for animation
 def cut_sheet(sheet, columns, rows, need):
     rect = pygame.Rect(0, 0, sheet.get_width() // columns,
                        sheet.get_height() // rows)
@@ -151,8 +158,11 @@ collected_apples = 0
 bad_apples_collected = 0
 global first_result
 global second_result
+
+# Fonts
 pygame.font.init()
 font = pygame.font.Font('data/VT323-Regular.ttf', 40)
+
 s = 0
 
 
@@ -209,6 +219,7 @@ class Apple(pygame.sprite.Sprite):
                 self.kill()
                 missed_apples += 1
             if pygame.sprite.collide_mask(self, bro):
+                pop_sound.play()
                 collected_apples += 1
                 self.kill()
 
@@ -233,6 +244,7 @@ class BadApple(pygame.sprite.Sprite):
                 self.kill()
             if pygame.sprite.collide_mask(self, bro):
                 bad_apples_collected += 1
+                ouch.play()
                 lives.update()
                 self.kill()
 
@@ -446,7 +458,6 @@ while run_end:
     pygame.display.flip()
     clock.tick(200)
     c += 1
-
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
