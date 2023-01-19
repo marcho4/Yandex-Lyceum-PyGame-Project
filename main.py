@@ -7,10 +7,8 @@ import sqlite3
 from PyQt5 import QtGui
 from PyQt5.QtWidgets import QWidget, QApplication, QPushButton, QLineEdit, QLabel
 
-# Sounds
+# Music
 pygame.init()
-pop_sound = pygame.mixer.Sound('data/mixkit-message-pop-alert-2354.mp3')
-ouch = pygame.mixer.Sound('data/ouch!.wav')
 pygame.mixer.music.load('data/Cozy-Place-Chill-Background-Music.mp3')
 pygame.mixer.music.play()
 
@@ -25,16 +23,20 @@ class Window(QWidget):
         self.setGeometry(500, 200, 300, 300)
         self.setWindowTitle('Name')
         self.setStyleSheet('background: rgb(0, 0, 0)')
+
         #  connecting to database
         global con
         con = sqlite3.connect('data/game1.db')
         global cur
         cur = con.cursor()
-        self.btn = QPushButton('Save', self)
-        self.btn.setGeometry(20, 200, 150, 50)
+
+        #  initialising font
         font = QtGui.QFont()
         font.setFamily('Times')
         font.setPointSize(20)
+
+        self.btn = QPushButton('Save', self)
+        self.btn.setGeometry(20, 200, 150, 50)
         self.btn.setFont(font)
         self.btn.setStyleSheet('background: rgb(0,255,0);')
 
@@ -92,6 +94,12 @@ def load_image(name):
     return image
 
 
+#  Downloading sounds
+def load_sound(name):
+    sound = pygame.mixer.Sound(f"{'data'}/{name}")
+    return sound
+
+
 #  Start window
 class Poster(pygame.sprite.Sprite):
     def __init__(self, group, size):
@@ -137,12 +145,15 @@ post = pygame.sprite.Group()
 poster = Poster(post, size)
 
 running = True
+
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+            
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
+                #  switching window if SPACE key is pressed
                 running = False
                 run = True
     post.draw(screen)
@@ -156,13 +167,19 @@ pygame.display.set_caption('Собери яблоки!')
 missed_apples = 0
 collected_apples = 0
 bad_apples_collected = 0
+
 global first_result
 global second_result
+
+con = sqlite3.connect('data/game1.db')
+cur = con.cursor()
+scores = cur.execute(f'''SELECT first_result FROM result''').fetchall()
+high_score = int(*max(scores))
 
 # Fonts
 pygame.font.init()
 font = pygame.font.Font('data/VT323-Regular.ttf', 40)
-
+#  s -- counter of windows
 s = 0
 
 
@@ -194,7 +211,8 @@ class Background(pygame.sprite.Sprite):
                 r2 = font.render('Press SPACE to leave the game', True, 'black')
                 screen.blit(r2, (165, 290))
         else:
-            render = font.render(f'Your score: {collected_apples}', True, 'black')
+            render = font.render(f'''Your score: {collected_apples}
+High score: {high_score}''', True, 'black')
             screen.blit(render, (10, 40))
         pygame.display.flip()
 
@@ -219,7 +237,7 @@ class Apple(pygame.sprite.Sprite):
                 self.kill()
                 missed_apples += 1
             if pygame.sprite.collide_mask(self, bro):
-                pop_sound.play()
+                load_sound('mixkit-message-pop-alert-2354.mp3').play()
                 collected_apples += 1
                 self.kill()
 
@@ -244,7 +262,7 @@ class BadApple(pygame.sprite.Sprite):
                 self.kill()
             if pygame.sprite.collide_mask(self, bro):
                 bad_apples_collected += 1
-                ouch.play()
+                load_sound('ouch!.wav').play()
                 lives.update()
                 self.kill()
 
@@ -328,6 +346,7 @@ class AnimatedSprite(pygame.sprite.Sprite):
         self.image = self.frames[self.cur_frame]
 
 
+#  initialising first level
 background = Background()
 bro = AnimatedSprite(load_image('bro.png'), 4, 4, 1, 400, 490)
 l1 = Lives((600, 40))
@@ -345,6 +364,7 @@ level = 1
 
 #  showing first level
 run = True
+
 while run:
     keys = pygame.key.get_pressed()
     now1 = time.time()
@@ -362,8 +382,10 @@ while run:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
+            
         if bad_apples_collected == 3:
             if keys[pygame.K_SPACE]:
+                #  switching window if SPACE key is pressed
                 run = False
         if now1 - start1 > apple_interval:
             Apple([random.randint(20, 760), random.randint(0, 20)])
@@ -381,6 +403,7 @@ while run:
         clock.tick(120)
 
 #  saving first level result for database
+#  initialising second level
 first_result = collected_apples
 missed_apples = 0
 collected_apples = 0
@@ -394,9 +417,14 @@ apple_interval = 2
 bad_apple_interval = 3
 level = 2
 s = 0
+con = sqlite3.connect('data/game1.db')
+cur = con.cursor()
+scores = cur.execute(f'''SELECT second_result FROM result''').fetchall()
+high_score = int(*max(scores))
 
 #  showing second level
 run2 = True
+
 while run2:
     keys = pygame.key.get_pressed()
     now1 = time.time()
@@ -414,8 +442,10 @@ while run2:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run2 = False
+            
         if bad_apples_collected + missed_apples == 3:
             if keys[pygame.K_SPACE]:
+                #  switching window if SPACE key is pressed
                 run2 = False
                 run_end = True
         if now1 - start1 > apple_interval:
@@ -435,6 +465,7 @@ while run2:
         clock.tick(200)
 
 #  saving second result for database
+#  initialising end window
 second_result = collected_apples
 size = 600, 600
 screen = pygame.display.set_mode(size)
@@ -450,7 +481,9 @@ while run_end:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run_end = False
+            
         if (event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN) and c >= 650:
+            #  switching window if SPACE key is pressed
             run_end = False
     screen.fill('green')
     sprites.draw(screen)
@@ -459,6 +492,7 @@ while run_end:
     clock.tick(200)
     c += 1
 
+#  exiting
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = Window()
